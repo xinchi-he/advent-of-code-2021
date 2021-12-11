@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 func main() {
@@ -21,39 +20,7 @@ func main() {
 		}
 	}
 
-	//fmt.Println(initState)
-
-	/*
-
-		DAY := 80
-
-		for i := 0; i < DAY; i++ {
-			for index, val := range initState {
-				if val == 0 {
-					initState[index] = 6
-					initState = append(initState, 8)
-				} else {
-					initState[index]--
-				}
-			}
-
-			//fmt.Println(i+1, initState)
-		}
-
-		fmt.Println(len(initState))
-	*/
-
-	dataSet := createParallelDataSet(8, initState)
-	fmt.Println(dataSet, len(dataSet))
-
-	for _, state := range dataSet {
-		go countFish(state, 256)
-	}
-
-	time.Sleep(time.Second * 100)
-	fmt.Println("done")
-
-	fmt.Println("wtf?")
+	fmt.Println(countFish(initState, 256))
 
 }
 
@@ -80,37 +47,45 @@ func read(path string) []string {
 	return lines
 }
 
-func createParallelDataSet(cpuCore int, dataSet []int) [][]int {
-	var result [][]int
-	var single []int
-	for i, _ := range dataSet {
-		if i == 0 {
-			single = append(single, dataSet[i])
-		} else if i%(len(dataSet)/cpuCore+1) != 0 {
-			single = append(single, dataSet[i])
-		} else {
-			result = append(result, single)
-			single = []int{}
-		}
+func countFish(states []int, day int) int64 {
+	/*
+
+		day		0, 1, 2, 3, 4, 5, 6, 7, 8
+		init	   1, 1, 2, 1
+		day1	1, 1, 2, 1
+		day2    1, 2, 1           1,    1
+		day3    2, 1,          1, 1, 1, 1
+
+		algo:  left shift every day, if day[0] != 0, shift first, and then append day[0] to the end,
+				also increase day[6] by day[0]
+
+	*/
+	fishes := []int{0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	for _, fish := range states {
+		fishes[fish]++
 	}
 
-	result = append(result, single)
+	fmt.Println(fishes)
 
-	return result
-}
-
-func countFish(state []int, day int) int {
 	for i := 0; i < day; i++ {
-		for index, val := range state {
-			if val == 0 {
-				state[index] = 6
-				state = append(state, 8)
-			} else {
-				state[index]--
-			}
+		if fishes[0] == 0 {
+			fishes = fishes[1:]
+			fishes = append(fishes, 0)
+		} else {
+			top := fishes[0]
+			fishes = fishes[1:]
+			fishes = append(fishes, top)
+			fishes[6] += top
 		}
 	}
 
-	fmt.Println(len(state))
-	return len(state)
+	var res int64
+	res = 0
+
+	for _, f := range fishes {
+		res += int64(f)
+	}
+
+	return res
 }
